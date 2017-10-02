@@ -1,0 +1,108 @@
+#!/bin/bash
+
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source /usr/share/yunohost/helpers
+
+#=================================================
+# LOAD SETTINGS
+#=================================================
+
+app=$YNH_APP_INSTANCE_NAME
+
+domain=$(ynh_app_setting_get $app domain)
+path_url=$(ynh_app_setting_get $app path)
+final_path=$(ynh_app_setting_get $app final_path)
+git_token=$(ynh_app_setting_get $app git_token)
+
+#=================================================
+# ENSURE DOWNWARD COMPATIBILITY
+#=================================================
+
+#=================================================
+# BACKUP BEFORE UPGRADE THEN ACTIVE TRAP
+#=================================================
+
+# Backup the current version of the app
+ynh_backup_before_upgrade
+ynh_clean_setup () {
+	# restore it if the upgrade fails
+	ynh_restore_upgradebackup
+}
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# CHECK THE PATH
+#=================================================
+
+# Normalize the URL path syntax
+path_url=$(ynh_normalize_url_path $path_url)
+
+#=================================================
+# STANDARD UPGRADE STEPS
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+
+# Create a dedicated nginx config
+ynh_add_nginx_config
+
+#=================================================
+# SPECIFIC UPGRADE
+#=================================================
+# UPDATE SCRIPTS
+#=================================================
+
+(cd "$final_path/apps/"
+git pull)
+
+#=================================================
+# UPDATE LINK FOR HTTP ACCESS
+#=================================================
+
+ln -sf "$final_path/apps/community-build.json" "$final_path/apps_http/community.json"
+ln -sf "$final_path/apps/dev-build.json" "$final_path/apps_http/dev.json"
+ln -sf "$final_path/apps/official-build.json" "$final_path/apps_http/official.json"
+ln -sf "$final_path/apps_http/official.json" "$final_path/apps_http/list.json"
+
+#=================================================
+# UPDATE THE CRON FILE
+#=================================================
+
+ynh_replace_string "__FINALPATH__" "$final_path" "../conf/app_list.cron"
+ynh_replace_string "__TOKEN__" "$git_token" "../conf/app_list.cron"
+ynh_replace_string "__APP__" "$app" "../conf/app_list.cron"
+cp ../conf/app_list.cron /etc/cron.d/app_list
+
+#=================================================
+# UPDATE LOGROTATE
+#=================================================
+
+# Use logrotate to manage app-specific logfile(s)
+ynh_use_logrotate
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+
+# Set right permissions for curl installation
+chown -R root: $final_path
+
+#=================================================
+# SETUP SSOWAT
+#=================================================
+
+ynh_app_setting_set $app unprotected_uris "/"
+
+#=================================================
+# RELOAD NGINX
+#=================================================
+
+systemctl reload nginx

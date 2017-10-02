@@ -1,0 +1,52 @@
+{
+    "name": "app.yunohost.org",
+    "id": "app_yunohost",
+    "packaging_format": 1,
+    "description": {
+        "en": "Apps lists repository.",
+        "fr": "Dépôt des listes d'applications."
+    },
+    "license": "free",
+    "version": "1.0",
+    "maintainer": {
+		"name": "Maniack Crudelis",
+		"email": "maniackc_dev@crudelis.fr"
+    },
+    "requirements": {
+        "yunohost": ">= 2.7.2"
+    },
+    "multi_instance": false,
+    "services": [
+        "nginx"
+    ],
+    "arguments": {
+        "install" : [
+            {
+                "name": "domain",
+                "type": "domain",
+                "ask": {
+                    "en": "Choose a domain name for the apps lists repository",
+                    "fr": "Choisissez un nom de domaine pour le dépôt des listes d'applications"
+                },
+                "example": "example.com"
+            },
+            {
+                "name": "path",
+                "type": "path",
+                "ask": {
+                    "en": "Choose a path for the apps lists repository",
+                    "fr": "Choisissez un chemin pour le dépôt des listes d'applications"
+                },
+                "example": "/example",
+                "default": "/"
+            },
+            {
+                "name": "token",
+                "ask": {
+                    "en": "Give the github token for yunohost-bot",
+                    "fr": "Donnez le token github pour yunohost-bot"
+                }
+            }
+        ]
+    }
+}

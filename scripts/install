@@ -1,0 +1,147 @@
+#!/bin/bash
+
+#=================================================
+# GENERIC START
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source /usr/share/yunohost/helpers
+
+#=================================================
+# MANAGE SCRIPT FAILURE
+#=================================================
+
+# Exit if an error occurs during the execution of the script
+ynh_abort_if_errors
+
+#=================================================
+# RETRIEVE ARGUMENTS FROM THE MANIFEST
+#=================================================
+
+domain=$YNH_APP_ARG_DOMAIN
+path_url=$YNH_APP_ARG_PATH
+git_token=$YNH_APP_ARG_TOKEN
+
+app=$YNH_APP_INSTANCE_NAME
+
+#=================================================
+# CHECK IF THE APP CAN BE INSTALLED WITH THESE ARGS
+#=================================================
+
+final_path=/var/www/$app
+test ! -e "$final_path" || ynh_die "This path already contains a folder"
+
+# Normalize the url path syntax
+path_url=$(ynh_normalize_url_path $path_url)
+
+# Check web path availability
+ynh_webpath_available $domain $path_url
+# Register (book) web path
+ynh_webpath_register $app $domain $path_url
+
+#=================================================
+# STORE SETTINGS FROM MANIFEST
+#=================================================
+
+ynh_app_setting_set $app domain $domain
+ynh_app_setting_set $app path $path_url
+ynh_app_setting_set $app git_token $git_token
+
+#=================================================
+# STANDARD MODIFICATIONS
+#=================================================
+# INSTALL DEPENDENCIES
+#=================================================
+
+ynh_install_app_dependencies python-dateutil
+
+#=================================================
+# CREATE THE MAIN DIRECTORY
+#=================================================
+
+mkdir "$final_path"
+ynh_app_setting_set $app final_path $final_path
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+
+# Create a dedicated nginx config
+ynh_add_nginx_config
+
+#=================================================
+# SPECIFIC SETUP
+#=================================================
+# CLONE YUNOHOST APPS REPOSITORY
+#=================================================
+
+git clone https://github.com/YunoHost/apps "$final_path/apps"
+
+#=================================================
+# CHANGE THE HEAD COMMIT
+#=================================================
+
+# Change the head commit for should_i_rebuild.sh
+# This commit is the Init commit
+echo a727ee12ac7aa0c4659b9ccc74d69adb76cba1eb > "$final_path/apps/.git/refs/heads/master"
+
+#=================================================
+# CREATE THE LOG DIRECTORY
+#=================================================
+
+mkdir -p /var/log/$app
+
+#=================================================
+# EXECUTE SHOULD_I_REBUILD SCRIPT
+#=================================================
+
+(cd "$final_path/apps/"
+bash should_i_rebuild.sh yunohost-bot:$git_token > /var/log/$app/app_list_auto_update.log) || true
+
+#=================================================
+# CREATE LINK FOR HTTP ACCESS
+#=================================================
+
+mkdir "$final_path/apps_http"
+ln -s "$final_path/apps/community-build.json" "$final_path/apps_http/community.json"
+ln -s "$final_path/apps/dev-build.json" "$final_path/apps_http/dev.json"
+ln -s "$final_path/apps/official-build.json" "$final_path/apps_http/official.json"
+ln -s "$final_path/apps_http/official.json" "$final_path/apps_http/list.json"
+
+#=================================================
+# ADD THE CRON FILE
+#=================================================
+
+ynh_replace_string "__FINALPATH__" "$final_path" "../conf/app_list.cron"
+ynh_replace_string "__TOKEN__" "$git_token" "../conf/app_list.cron"
+ynh_replace_string "__APP__" "$app" "../conf/app_list.cron"
+cp ../conf/app_list.cron /etc/cron.d/app_list
+
+#=================================================
+# GENERIC FINALIZATION
+#=================================================
+# SECURE FILES AND DIRECTORIES
+#=================================================
+
+# Set permissions to app files
+chown -R root: $final_path
+
+#=================================================
+# SETUP LOGROTATE
+#=================================================
+
+# Use logrotate to manage application logfile(s)
+ynh_use_logrotate
+
+#=================================================
+# SETUP SSOWAT
+#=================================================
+
+ynh_app_setting_set $app unprotected_uris "/"
+
+#=================================================
+# RELOAD NGINX
+#=================================================
+
+systemctl reload nginx

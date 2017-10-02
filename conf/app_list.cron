@@ -1,0 +1,4 @@
+# Rebuild apps list
+# Git repository: https://github.com/YunoHost/apps/
+# Documentation: https://dev.yunohost.org/documents/4/edit
+*/5 * * * * root cd __FINALPATH__/apps/ && date >> /var/log/__APP__/app_list_auto_update.log && bash ./should_i_rebuild.sh yunohost-bot:__TOKEN__ >> /var/log/__APP__/app_list_auto_update.log 2>&1
