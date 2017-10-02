@@ -97,7 +97,7 @@ mkdir -p /var/log/$app
 #=================================================
 
 (cd "$final_path/apps/"
-bash should_i_rebuild.sh yunohost-bot:$git_token > /var/log/$app/app_list_auto_update.log) || true
+bash should_i_rebuild.sh yunohost-bot:$git_token | tee /var/log/$app/app_list_auto_update.log 2>&1) || true
 
 #=================================================
 # CREATE LINK FOR HTTP ACCESS
