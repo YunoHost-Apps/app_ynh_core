@@ -2,8 +2,6 @@
 	; Manifest
 		domain="domain.tld"	(DOMAIN)
 		path="/path"	(PATH)
-# Because we can't give the real token...
-		token="token..."
 	; Checks
 		pkg_linter=1
 		setup_sub_dir=1
@@ -17,19 +15,6 @@
 		incorrect_path=1
 		port_already_use=0
 		change_url=0
-;;; Levels
-	Level 1=auto
-	Level 2=auto
-	Level 3=auto
-# Level 4: 
-	Level 4=0
-# Level 5: 
-	Level 5=auto
-	Level 6=auto
-	Level 7=auto
-	Level 8=0
-	Level 9=0
-	Level 10=0
 ;;; Options
 Email=
 Notification=none

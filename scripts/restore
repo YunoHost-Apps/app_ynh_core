@@ -61,20 +61,13 @@ chown -R root: $final_path
 # REINSTALL DEPENDENCIES
 #=================================================
 
-# Define and install dependencies
-ynh_install_app_dependencies python-dateutil
+ynh_install_app_dependencies git python3-yaml
 
 #=================================================
 # RESTORE THE CRON FILE
 #=================================================
 
 ynh_restore_file "/etc/cron.d/app_list"
-
-#=================================================
-# RESTORE THE LOGROTATE CONFIGURATION
-#=================================================
-
-ynh_restore_file "/etc/logrotate.d/$app"
 
 #=================================================
 # GENERIC FINALIZATION

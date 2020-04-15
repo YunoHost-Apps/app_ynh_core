@@ -41,13 +41,6 @@ ynh_secure_remove "$final_path"
 ynh_remove_nginx_config
 
 #=================================================
-# REMOVE LOGROTATE CONFIGURATION
-#=================================================
-
-# Remove the app-specific logrotate config
-ynh_remove_logrotate
-
-#=================================================
 # SPECIFIC REMOVE
 #=================================================
 # REMOVE THE CRON FILE
