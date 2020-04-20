@@ -39,13 +39,6 @@
                 },
                 "example": "/example",
                 "default": "/"
-            },
-            {
-                "name": "token",
-                "ask": {
-                    "en": "Give the github token for yunohost-bot",
-                    "fr": "Donnez le token github pour yunohost-bot"
-                }
             }
         ]
     }

@@ -21,7 +21,6 @@ ynh_abort_if_errors
 
 domain=$YNH_APP_ARG_DOMAIN
 path_url=$YNH_APP_ARG_PATH
-git_token=$YNH_APP_ARG_TOKEN
 
 app=$YNH_APP_INSTANCE_NAME
 
@@ -35,8 +34,6 @@ test ! -e "$final_path" || ynh_die "This path already contains a folder"
 # Normalize the url path syntax
 path_url=$(ynh_normalize_url_path $path_url)
 
-# Check web path availability
-ynh_webpath_available $domain $path_url
 # Register (book) web path
 ynh_webpath_register $app $domain $path_url
 
@@ -46,7 +43,6 @@ ynh_webpath_register $app $domain $path_url
 
 ynh_app_setting_set $app domain $domain
 ynh_app_setting_set $app path $path_url
-ynh_app_setting_set $app git_token $git_token
 
 #=================================================
 # STANDARD MODIFICATIONS
@@ -54,7 +50,7 @@ ynh_app_setting_set $app git_token $git_token
 # INSTALL DEPENDENCIES
 #=================================================
 
-ynh_install_app_dependencies python-dateutil
+ynh_install_app_dependencies git python3-yaml
 
 #=================================================
 # CREATE THE MAIN DIRECTORY
@@ -79,44 +75,10 @@ ynh_add_nginx_config
 git clone https://github.com/YunoHost/apps "$final_path/apps"
 
 #=================================================
-# CHANGE THE HEAD COMMIT
-#=================================================
-
-# Change the head commit for should_i_rebuild.sh
-# This commit is the Init commit
-echo a727ee12ac7aa0c4659b9ccc74d69adb76cba1eb > "$final_path/apps/.git/refs/heads/master"
-
-#=================================================
-# CREATE THE LOG DIRECTORY
-#=================================================
-
-mkdir -p /var/log/$app
-
-#=================================================
-# EXECUTE SHOULD_I_REBUILD SCRIPT
-#=================================================
-
-(cd "$final_path/apps/"
-bash should_i_rebuild.sh yunohost-bot:$git_token | tee /var/log/$app/app_list_auto_update.log 2>&1) || true
-
-#=================================================
-# CREATE LINK FOR HTTP ACCESS
-#=================================================
-
-mkdir "$final_path/apps_http"
-ln -s "$final_path/apps/community-build.json" "$final_path/apps_http/community.json"
-ln -s "$final_path/apps/dev-build.json" "$final_path/apps_http/dev.json"
-ln -s "$final_path/apps/official-build.json" "$final_path/apps_http/official.json"
-ln -s "$final_path/apps_http/official.json" "$final_path/apps_http/list.json"
-
-#=================================================
 # ADD THE CRON FILE
 #=================================================
 
-ynh_replace_string "__FINALPATH__" "$final_path" "../conf/app_list.cron"
-ynh_replace_string "__TOKEN__" "$git_token" "../conf/app_list.cron"
-ynh_replace_string "__APP__" "$app" "../conf/app_list.cron"
-cp ../conf/app_list.cron /etc/cron.d/app_list
+echo '0 */4 * * * root /bin/bash /var/www/app_yunohost/apps/rebuild.sh' > /etc/cron.d/app_list
 
 #=================================================
 # GENERIC FINALIZATION
@@ -126,13 +88,6 @@ cp ../conf/app_list.cron /etc/cron.d/app_list
 
 # Set permissions to app files
 chown -R root: $final_path
-
-#=================================================
-# SETUP LOGROTATE
-#=================================================
-
-# Use logrotate to manage application logfile(s)
-ynh_use_logrotate
 
 #=================================================
 # SETUP SSOWAT
